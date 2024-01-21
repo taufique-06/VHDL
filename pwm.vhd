@@ -190,7 +190,7 @@ begin
 				end if;
 				
 		end case;
-		        if (dutyCycleButton = '0' or frequencyButton = '0') and (state = offState or state = onState) then
+		   if (dutyCycleButton = '0' or frequencyButton = '0') and (state = offState or state = onState) then
             state <= initialState;
         end if;
 	  end if;
@@ -342,4 +342,3 @@ displayFrequency:process(frequency)
 	end process;
 	
 end behavioural; 
-
