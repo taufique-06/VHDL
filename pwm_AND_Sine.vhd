@@ -1,38 +1,40 @@
-Library ieee;
-Use ieee.std_logic_1164.All;
-Use ieee.std_logic_unsigned.All;
-Use ieee.numeric_std.All;
-Use ieee.math_real.All;
-Use work.ssegPackage.All;
-Entity PWMWave Is
-	Generic
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
+use work.ssegPackage.all;
+
+entity PWMWave is
+	generic
 	(
-		TOTAL_POINTS : Integer := 360;
-		MAX_AMPLITUDE : Integer := 255
+		TOTAL_POINTS : integer := 360;
+		MAX_AMPLITUDE : integer := 255
 	);
-	Port
+	port
 	(
-		button, frequencyButton, dutyCycleButton, switch, waveSwitch, reset, clk : In std_logic;
-		sine_out : Out Integer Range 0 To MAX_AMPLITUDE;
-		sseg0, sseg1, sseg3, sseg4, sseg5 : Out std_logic_vector(7 Downto 0);
-		led1, led2, led3 : Buffer std_logic := '0'
+		button, frequencyButton, dutyCycleButton, switch, waveSwitch, reset, clk : in std_logic;
+		sine_out : out integer range 0 to MAX_AMPLITUDE;
+		sseg0, sseg1, sseg3, sseg4, sseg5 : out std_logic_vector(7 downto 0);
+		led1, led2, led3 : buffer std_logic := '0'
 	);
-End PWMWave;
-Architecture behavioural Of PWMWave Is
-	Type state_type Is (initialState, offState, onState);
-	Signal state : state_type := initialState;
-	Type sineState_type Is (sineInitialState, sineWaveState);
-	Signal sineState : sineState_type := sineInitialState;
-	Signal led2_btn_state : std_logic := '0';
-	Signal dutyCycle : unsigned(11 Downto 0) := x"000";
-	Signal bcd : std_logic_vector (15 Downto 0);
-	Signal bcd1 : std_logic_vector (15 Downto 0);
-	Signal clk_50 : std_logic;
-	Signal frequency : unsigned(11 Downto 0) := x"001";
-	Signal led1_btn_state : std_logic := '0';
-	Signal i : Integer Range 0 To TOTAL_POINTS := 0;
-	Type sine_table_type Is Array (0 To TOTAL_POINTS - 1) Of Integer Range 0 To MAX_AMPLITUDE;
-	Signal sine_table : sine_table_type := (
+end PWMWave;
+
+architecture behavioural of PWMWave is
+	type state_type is (initialState, offState, onState);
+	signal state : state_type := initialState;
+	type sineState_type is (sineInitialState, sineWaveState);
+	signal sineState : sineState_type := sineInitialState;
+	signal led2_btn_state : std_logic := '0';
+	signal dutyCycle : unsigned(11 downto 0) := x"000";
+	signal bcd : std_logic_vector (15 downto 0);
+	signal bcd1 : std_logic_vector (15 downto 0);
+	signal clk_50 : std_logic;
+	signal frequency : unsigned(11 downto 0) := x"001";
+	signal led1_btn_state : std_logic := '0';
+	signal i : integer range 0 to TOTAL_POINTS := 0;
+	type sine_table_type is array (0 to TOTAL_POINTS - 1) of integer range 0 to MAX_AMPLITUDE;
+	signal sine_table : sine_table_type := (
 		128, 130, 132, 134, 136, 139, 141, 143, 145, 147, 150, 152, 154, 156, 158, 160,
 		163, 165, 167, 169, 171, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193,
 		195, 197, 199, 201, 202, 204, 206, 208, 209, 211, 213, 214, 216, 218, 219, 221,
@@ -57,116 +59,117 @@ Architecture behavioural Of PWMWave Is
 		76, 78, 80, 82, 84, 86, 88, 90, 92, 95, 97, 99, 101, 103, 105, 108,
 		110, 112, 114, 116, 119, 121, 123, 125
 	);
-	Component doubleDabble
-		Port
+	
+	component doubleDabble
+		port
 		(
-			clk : In std_logic;
-			binaryIn : In unsigned(11 Downto 0);
-			bcd : Out std_logic_vector(15 Downto 0)
+			clk : in std_logic;
+			binaryIn : in unsigned(11 downto 0);
+			bcd : out std_logic_vector(15 downto 0)
 		);
-	End Component;
-	--procedure setFrequencyAndDutyCycle(frequencyParameter,dutyCycleParameter:integer) is
-	-- begin
-	-- onTime <= dutyCycleParameter * clk_frequency * frequencyParameter;
-	-- offTime <= integer((100 - dutyCycleParameter) * (frequencyParameter) * (clk_frequency));
-	-- end procedure setFrequencyAndDutyCycle;
-Begin
+	end component;
+	
+begin
 	clk_50 <= clk;
 	threeDigit : doubleDabble
-	Port Map(clk => clk_50, binaryIn => dutyCycle, bcd => bcd);
+	port map(clk => clk_50, binaryIn => dutyCycle, bcd => bcd);
 	frequencySseg : doubleDabble
-	Port Map(clk => clk_50, binaryIn => frequency, bcd => bcd1);
-	sseg0 <= ssegCode(bcd(3 Downto 0));
-	sseg1 <= ssegCode(bcd(7 Downto 4));
-	sseg3 <= ssegCode(bcd1(3 Downto 0));
-	sseg4 <= ssegCode(bcd1(7 Downto 4));
-	sseg5 <= ssegCode(bcd1(11 Downto 8));
-	set_frequency_and_dutyCycle_process : Process (clk, button)
-		Variable timer : Integer := 0;
-		Variable timer1 : Integer := 0;
-		Variable sth : Integer := 0;
-		Variable dutyCycleValue : Integer := 0;
-		Variable frequencyValue : Integer := 1;
-		Variable onTime, offTime : Integer := 0;
-		Variable clk_frequency : Integer := 500000;
+	port map(clk => clk_50, binaryIn => frequency, bcd => bcd1);
+	sseg0 <= ssegCode(bcd(3 downto 0));
+	sseg1 <= ssegCode(bcd(7 downto 4));
+	sseg3 <= ssegCode(bcd1(3 downto 0));
+	sseg4 <= ssegCode(bcd1(7 downto 4));
+	sseg5 <= ssegCode(bcd1(11 downto 8));
+	
+	set_frequency_and_dutyCycle_process : process (clk, button)
+		variable timer : integer := 0;
+		variable timer1 : integer := 0;
+		variable sth : integer := 0;
+		variable dutyCycleValue : integer := 0;
+		variable frequencyValue : integer := 1;
+		variable onTime, offTime : integer := 0;
+		variable clk_frequency : integer := 500000;
 		--
-		Variable clk_50 : Integer := 50000000; -- set this to 10
-		Variable timer2 : Integer := 0;
-		Variable timeAtEachPoint : Integer := Integer((clk_50) / (360 * frequencyValue));
-	Begin
-		If rising_edge(clk) Then
+		variable clk_50 : integer := 50000000; -- set this to 10
+		variable timer2 : integer := 0;
+		variable timeAtEachPoint : integer := integer((clk_50) / (360 * frequencyValue));
+		
+	begin
+		if rising_edge(clk) then
 			-- Frequency
-			If frequencyButton = '0' And switch = '1' Then
-				If (timer < 12500000) Then
+			if frequencyButton = '0' and switch = '1' then
+				if (timer < 12500000) then
 					timer := timer + 1;
-				Else
-					If frequencyValue = 1000 Then
+				else
+					if frequencyValue = 1000 then
 						frequencyValue := frequencyValue;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					Elsif (frequencyValue >= 100) Then
+					elsif (frequencyValue >= 100) then
 						frequencyValue := frequencyValue + 50;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					Elsif (frequencyValue = 1) Then
+					elsif (frequencyValue = 1) then
 						frequencyValue := frequencyValue + 4;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					Else
+					else
 						frequencyValue := frequencyValue + 5;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					End If;
-				End If;
-			Elsif frequencyButton = '0' And switch = '0' Then
-				If (timer < 12500000) Then
+					end if;
+				end if;
+			elsif frequencyButton = '0' and switch = '0' then
+				if (timer < 12500000) then
 					timer := timer + 1;
-				Else
-					If frequencyValue = 0 Then
+				else
+					if frequencyValue = 0 then
 						frequencyValue := frequencyValue;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					Elsif (frequencyValue >= 100) Then
+					elsif (frequencyValue >= 100) then
 						frequencyValue := frequencyValue - 50;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					Else
+					else
 						frequencyValue := frequencyValue - 4;
 						frequency <= to_unsigned(frequencyValue, 12);
 						timer := 0;
-					End If;
-				End If;
-			End If;
+					end if;
+				end if;
+			end if;
+			
 			--DutyCycle
-			If dutyCycleButton = '0' And switch = '1' Then
-				If (timer < 12500000) Then
+			if dutyCycleButton = '0' and switch = '1' then
+				if (timer < 12500000) then
 					timer := timer + 1;
-				Else
-					If dutyCycleValue = 100 Then
+				else
+					if dutyCycleValue = 100 then
 						dutyCycleValue := dutyCycleValue;
 						dutyCycle <= to_unsigned(dutyCycleValue, 12);
 						timer := 0;
-					Else
+					else
 						dutyCycleValue := dutyCycleValue + 5;
 						dutyCycle <= to_unsigned(dutyCycleValue, 12);
 						timer := 0;
-					End If;
-				End If;
-			Elsif dutyCycleButton = '0' And switch = '0' Then
-				If (timer < 12500000) Then
+					end if;
+				end if;
+			elsif dutyCycleButton = '0' and switch = '0' then
+				if (timer < 12500000) then
 					timer := timer + 1;
-				Else
-					If dutyCycleValue = 0 Then
+				else
+					if dutyCycleValue = 0 then
 						dutyCycleValue := dutyCycleValue;
 						dutyCycle <= to_unsigned(dutyCycleValue, 12);
 						timer := 0;
-					Else
+					else
 						dutyCycleValue := dutyCycleValue - 5;
 						dutyCycle <= to_unsigned(dutyCycleValue, 12);
 						timer := 0;
-					End If;
-				End If;
-			End If;
+					end if;
+				end if;
+			end if;
+			
 			-- Reset button functionality
 			-- if button = '1' then
 			-- timer1 := 0; -- Reset the 3-seconds timer when the button is released
@@ -184,100 +187,101 @@ Begin
 			-- state <= initialState;
 			-- end if;
 			-- end if;
-			If (waveSwitch = '1') Then
-				Case state Is
-					When initialState =>
+			
+			if (waveSwitch = '1') then
+				case state is
+					when initialState =>
 
 						-- led2 <= not led2_btn_state;
 						-- led2_btn_state <= not led2_btn_state;
-						If (button = '0') Then
-							If (timer < 12500000) Then
+						if (button = '0') then
+							if (timer < 12500000) then
 								timer := timer + 1;
-							Else
+							else
 								onTime := dutyCycleValue * clk_frequency * frequencyValue;
 								offTime := (100 - dutyCycleValue) * clk_frequency * frequencyValue;
 								state <= onState;
 
 								--setFrequencyAndDutyCycle(frequency,dutyCycleValue);
-								led2 <= Not led2_btn_state;
-								led2_btn_state <= Not led2_btn_state;
-							End If;
+								led2 <= not led2_btn_state;
+								led2_btn_state <= not led2_btn_state;
+							end if;
 
-						End If;
-					When onState =>
-						If (sth < onTime) Then
+						end if;
+					when onState =>
+						if (sth < onTime) then
 							state <= onState;
 							sth := sth + 1;
-						Else
+						else
 							-- onTime:= dutyCycleValue * clk_frequency * frequencyValue;
 							-- offTime:= (100-dutyCycleValue) * clk_frequency * frequencyValue;
 							state <= offState;
-							led2 <= Not led2_btn_state;
-							led2_btn_state <= Not led2_btn_state;
+							led2 <= not led2_btn_state;
+							led2_btn_state <= not led2_btn_state;
 
 							sth := 0;
-						End If;
-					When offState =>
-						If (sth < offTime) Then
+						end if;
+					when offState =>
+						if (sth < offTime) then
 							state <= offState;
 							sth := sth + 1;
-						Else
+						else
 							-- onTime:= dutyCycleValue * clk_frequency * frequencyValue;
 							-- offTime:= (100-dutyCycleValue) * clk_frequency * frequencyValue;
 							state <= onState;
-							led2 <= Not led2_btn_state;
-							led2_btn_state <= Not led2_btn_state;
+							led2 <= not led2_btn_state;
+							led2_btn_state <= not led2_btn_state;
 							sth := 0;
-						End If;
-				End Case;
-				If (dutyCycleButton = '0' Or frequencyButton = '0') And (state = offState Or state = onState) Then
-					If (timer < 12500000) Then
+						end if;
+				end case;
+				if (dutyCycleButton = '0' or frequencyButton = '0') and (state = offState or state = onState) then
+					if (timer < 12500000) then
 						timer := timer + 1;
-					Else
+					else
 						onTime := 0;
 						offTime := 0;
 						state <= initialState;
 						led2 <= '0';
 						led2_btn_state <= '0';
 						timer := 0;
-					End If;
-				End If;
-			Else
-				Case sineState Is
-					When sineInitialState =>
+					end if;
+				end if;
+			else
+				case sineState is
+					when sineInitialState =>
 
-						If (button = '0') Then
+						if (button = '0') then
 							sineState <= sineWaveState;
-						End If;
-					When sineWaveState =>
-						If (timer2 < timeAtEachPoint) Then
+						end if;
+					when sineWaveState =>
+						if (timer2 < timeAtEachPoint) then
 							sineState <= sineWaveState;
 							timer2 := timer2 + 1;
-						Else
+						else
 							i <= i + 1;
 							sineState <= sineWaveState;
-							If (i = TOTAL_POINTS - 1) Then
+							if (i = TOTAL_POINTS - 1) then
 								i <= 0;
-							End If;
+							end if;
 							timer2 := 0;
-						End If;
-						led1 <= Not led1_btn_state;
-						led1_btn_state <= Not led1_btn_state;
+						end if;
+						led1 <= not led1_btn_state;
+						led1_btn_state <= not led1_btn_state;
 						sine_out <= sine_table(i);
-				End Case;
-				If (frequencyButton = '0') And (sineState = sineWaveState) Then
-					If (timer < 12500000) Then
+				end case;
+				if (frequencyButton = '0') and (sineState = sineWaveState) then
+					if (timer < 12500000) then
 						timer := timer + 1;
-					Else
+					else
 						timer2 := 0;
 						i <= 0;
 						sineState <= sineInitialState;
 						led1 <= '0';
 						led1_btn_state <= '0';
 						timer := 0;
-					End If;
-				End If;
-			End If;
-		End If;
-	End Process;
-End behavioural;
+					end if;
+				end if;
+			end if;
+		end if;
+	end process;
+end behavioural;
